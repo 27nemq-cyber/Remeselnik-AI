@@ -1,47 +1,336 @@
-async function calculateDemo() {
-  if (!description.trim()) {
-    setMessage("Najprv opíš zákazku.");
-    return;
-  }
+"use client";
 
-  setLoading(true);
-  setMessage("");
-  setEditing(false);
+import { useState } from "react";
 
-  try {
-    const response = await fetch("/api/estimate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        description
-      })
-    });
+export default function Home() {
+  const [description, setDescription] = useState("");
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [editing, setEditing] = useState(false);
 
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        data.error || "Nepodarilo sa vytvoriť kalkuláciu."
-      );
+  async function calculateDemo() {
+    if (!description.trim()) {
+      setMessage("Najprv opíš zákazku.");
+      return;
     }
 
-    setItems(data.items || []);
+    setLoading(true);
+    setMessage("");
+    setEditing(false);
 
-    setMessage(
-      "AI vytvorila predbežnú kalkuláciu podľa tvojho cenníka."
-    );
+    try {
+      const response = await fetch("/api/estimate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          description
+        })
+      });
 
-  } catch (error) {
-    console.error(error);
+      const data = await response.json();
 
-    setMessage(
-      error.message ||
-      "Nepodarilo sa spojiť s AI."
-    );
+      if (!response.ok) {
+        throw new Error(
+          data.error || "Nepodarilo sa vytvoriť kalkuláciu."
+        );
+      }
 
-  } finally {
-    setLoading(false);
+      setItems(data.items || []);
+
+      setMessage(
+        "AI vytvorila predbežnú kalkuláciu podľa tvojho cenníka."
+      );
+
+    } catch (error) {
+      console.error(error);
+
+      setMessage(
+        error.message || "Nepodarilo sa spojiť s AI."
+      );
+
+    } finally {
+      setLoading(false);
+    }
   }
+
+  function updateItem(index, field, value) {
+    setItems((currentItems) =>
+      currentItems.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              [field]:
+                field === "name" || field === "unit"
+                  ? value
+                  : Number(value)
+            }
+          : item
+      )
+    );
+  }
+
+  function removeItem(index) {
+    setItems((currentItems) =>
+      currentItems.filter((_, i) => i !== index)
+    );
+  }
+
+  function addItem() {
+    setItems((currentItems) => [
+      ...currentItems,
+      {
+        name: "Nová položka",
+        qty: 1,
+        unit: "ks",
+        price: 0
+      }
+    ]);
+  }
+
+  const total = items.reduce(
+    (sum, item) => sum + item.qty * item.price,
+    0
+  );
+
+  return (
+    <main className="shell">
+
+      <header className="header">
+        <div>
+          <div className="eyebrow">
+            REMESELNÍK AI
+          </div>
+
+          <h1>AI Nacenenie</h1>
+
+          <p>
+            Opíš zákazku a Remeselník AI pripraví
+            návrh kalkulácie.
+          </p>
+        </div>
+
+        <div className="badge">
+          PREPROD
+        </div>
+      </header>
+
+      <section className="card">
+
+        <label htmlFor="description">
+          Opis zákazky
+        </label>
+
+        <textarea
+          id="description"
+          value={description}
+          onChange={(e) =>
+            setDescription(e.target.value)
+          }
+          placeholder="Napr.: Kompletná elektroinštalácia 3-izbového bytu, 75 m², 48 zásuviek, 12 svetiel, nový rozvádzač..."
+        />
+
+        <button
+          onClick={calculateDemo}
+          disabled={loading}
+        >
+          {loading
+            ? "Počítam..."
+            : "🤖 Vypočítať nacenenie"}
+        </button>
+
+        {message && (
+          <p className="message">
+            {message}
+          </p>
+        )}
+
+      </section>
+
+      {items.length > 0 && (
+
+        <section className="card">
+
+          <div className="sectionTitle">
+
+            <h2>
+              Návrh kalkulácie
+            </h2>
+
+            <span>
+              {editing ? "Úprava" : "AI návrh"}
+            </span>
+
+          </div>
+
+          <div className="table">
+
+            <div className="row head">
+              <span>Položka</span>
+              <span>Množstvo</span>
+              <span>Cena</span>
+              <span>Spolu</span>
+            </div>
+
+            {items.map((item, index) => (
+
+              <div
+                className="row"
+                key={index}
+              >
+
+                {editing ? (
+                  <>
+                    <span>
+                      <input
+                        type="text"
+                        value={item.name}
+                        onChange={(e) =>
+                          updateItem(
+                            index,
+                            "name",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </span>
+
+                    <span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.qty}
+                        onChange={(e) =>
+                          updateItem(
+                            index,
+                            "qty",
+                            e.target.value
+                          )
+                        }
+                      />
+
+                      <input
+                        type="text"
+                        value={item.unit}
+                        onChange={(e) =>
+                          updateItem(
+                            index,
+                            "unit",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </span>
+
+                    <span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.price}
+                        onChange={(e) =>
+                          updateItem(
+                            index,
+                            "price",
+                            e.target.value
+                          )
+                        }
+                      />{" "}
+                      €
+                    </span>
+
+                    <strong>
+                      {(item.qty * item.price).toFixed(2)} €
+                    </strong>
+
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() =>
+                        removeItem(index)
+                      }
+                    >
+                      Zmazať
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span>
+                      {item.name}
+                    </span>
+
+                    <span>
+                      {item.qty} {item.unit}
+                    </span>
+
+                    <span>
+                      {item.price.toFixed(2)} €
+                    </span>
+
+                    <strong>
+                      {(item.qty * item.price).toFixed(2)} €
+                    </strong>
+                  </>
+                )}
+
+              </div>
+
+            ))}
+
+          </div>
+
+          {editing && (
+            <button
+              type="button"
+              className="secondary"
+              onClick={addItem}
+            >
+              + Pridať položku
+            </button>
+          )}
+
+          <div className="total">
+
+            <span>
+              Predbežná cena
+            </span>
+
+            <strong>
+              {total.toFixed(2)} €
+            </strong>
+
+          </div>
+
+          <div className="actions">
+
+            <button
+              className="secondary"
+              onClick={() =>
+                setEditing(!editing)
+              }
+            >
+              {editing
+                ? "Uložiť úpravy"
+                : "Upraviť kalkuláciu"}
+            </button>
+
+            <button>
+              Schváliť zákazku
+            </button>
+
+          </div>
+
+        </section>
+
+      )}
+
+      <footer>
+        Remeselník AI · PREPROD
+      </footer>
+
+    </main>
+  );
 }
