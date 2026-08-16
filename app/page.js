@@ -28,6 +28,7 @@ export default function Home() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [editing, setEditing] = useState(false);
 
   function calculateDemo() {
     if (!description.trim()) {
@@ -37,6 +38,7 @@ export default function Home() {
 
     setLoading(true);
     setMessage("");
+    setEditing(false);
 
     setTimeout(() => {
       setItems(demoItems);
@@ -45,6 +47,40 @@ export default function Home() {
       );
       setLoading(false);
     }, 700);
+  }
+
+  function updateItem(index, field, value) {
+    setItems((currentItems) =>
+      currentItems.map((item, i) =>
+        i === index
+          ? {
+              ...item,
+              [field]:
+                field === "name" || field === "unit"
+                  ? value
+                  : Number(value)
+            }
+          : item
+      )
+    );
+  }
+
+  function removeItem(index) {
+    setItems((currentItems) =>
+      currentItems.filter((_, i) => i !== index)
+    );
+  }
+
+  function addItem() {
+    setItems((currentItems) => [
+      ...currentItems,
+      {
+        name: "Nová položka",
+        qty: 1,
+        unit: "ks",
+        price: 0
+      }
+    ]);
   }
 
   const total = items.reduce(
@@ -73,7 +109,6 @@ export default function Home() {
           PREPROD
         </div>
       </header>
-
 
       <section className="card">
 
@@ -107,7 +142,6 @@ export default function Home() {
 
       </section>
 
-
       {items.length > 0 && (
 
         <section className="card">
@@ -119,11 +153,10 @@ export default function Home() {
             </h2>
 
             <span>
-              AI návrh
+              {editing ? "Úprava" : "AI návrh"}
             </span>
 
           </div>
-
 
           <div className="table">
 
@@ -134,7 +167,6 @@ export default function Home() {
               <span>Spolu</span>
             </div>
 
-
             {items.map((item, index) => (
 
               <div
@@ -142,21 +174,100 @@ export default function Home() {
                 key={index}
               >
 
-                <span>
-                  {item.name}
-                </span>
+                {editing ? (
+                  <>
+                    <span>
+                      <input
+                        type="text"
+                        value={item.name}
+                        onChange={(e) =>
+                          updateItem(
+                            index,
+                            "name",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </span>
 
-                <span>
-                  {item.qty} {item.unit}
-                </span>
+                    <span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.qty}
+                        onChange={(e) =>
+                          updateItem(
+                            index,
+                            "qty",
+                            e.target.value
+                          )
+                        }
+                      />
 
-                <span>
-                  {item.price.toFixed(2)} €
-                </span>
+                      <input
+                        type="text"
+                        value={item.unit}
+                        onChange={(e) =>
+                          updateItem(
+                            index,
+                            "unit",
+                            e.target.value
+                          )
+                        }
+                      />
+                    </span>
 
-                <strong>
-                  {(item.qty * item.price).toFixed(2)} €
-                </strong>
+                    <span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={item.price}
+                        onChange={(e) =>
+                          updateItem(
+                            index,
+                            "price",
+                            e.target.value
+                          )
+                        }
+                      />{" "}
+                      €
+                    </span>
+
+                    <strong>
+                      {(item.qty * item.price).toFixed(2)} €
+                    </strong>
+
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() =>
+                        removeItem(index)
+                      }
+                    >
+                      Zmazať
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span>
+                      {item.name}
+                    </span>
+
+                    <span>
+                      {item.qty} {item.unit}
+                    </span>
+
+                    <span>
+                      {item.price.toFixed(2)} €
+                    </span>
+
+                    <strong>
+                      {(item.qty * item.price).toFixed(2)} €
+                    </strong>
+                  </>
+                )}
 
               </div>
 
@@ -164,6 +275,15 @@ export default function Home() {
 
           </div>
 
+          {editing && (
+            <button
+              type="button"
+              className="secondary"
+              onClick={addItem}
+            >
+              + Pridať položku
+            </button>
+          )}
 
           <div className="total">
 
@@ -177,11 +297,17 @@ export default function Home() {
 
           </div>
 
-
           <div className="actions">
 
-            <button className="secondary">
-              Upraviť kalkuláciu
+            <button
+              className="secondary"
+              onClick={() =>
+                setEditing(!editing)
+              }
+            >
+              {editing
+                ? "Uložiť úpravy"
+                : "Upraviť kalkuláciu"}
             </button>
 
             <button>
@@ -193,7 +319,6 @@ export default function Home() {
         </section>
 
       )}
-
 
       <footer>
         Remeselník AI · PREPROD
