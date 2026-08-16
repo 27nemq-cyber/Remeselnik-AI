@@ -105,14 +105,15 @@ Požadovaný formát:
       total
     });
 
-  } catch (error) {
+    } catch (error) {
     console.error("AI estimate error:", error);
 
     return NextResponse.json(
       {
-        error: "Nepodarilo sa vytvoriť AI kalkuláciu."
+        error:
+          error?.message ||
+          "Nepodarilo sa vytvoriť AI kalkuláciu."
       },
       { status: 500 }
     );
   }
-}
