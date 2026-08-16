@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { priceList } from "../../../../data/price-list";
+import { priceList } from "../../../data/price-list";
 
 export async function POST(request) {
   try {
