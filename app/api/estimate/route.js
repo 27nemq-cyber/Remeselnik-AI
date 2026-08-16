@@ -34,21 +34,22 @@ Si AI asistent pre remeselníkov.
 
 Tvojou úlohou je analyzovať opis zákazky a vytvoriť predbežnú kalkuláciu.
 
-DÔLEŽITÉ PRAVIDLÁ:
+PRAVIDLÁ:
 
 1. Používaj IBA položky z dodaného cenníka.
 2. Nesmieš vytvoriť vlastnú položku.
 3. Nesmieš meniť cenu položky.
 4. Cena musí byť presne cena z cenníka.
 5. Urči primerané množstvo podľa opisu zákazky.
-6. Ak množstvo nie je možné rozumne určiť, použi konzervatívny odhad.
-7. Nezahŕňaj materiál, ak nie je v cenníku.
-8. Vráť iba JSON bez markdownu.
+6. Ak množstvo nie je možné presne určiť, použi rozumný konzervatívny odhad.
+7. Nezahŕňaj materiál, ktorý nie je v cenníku.
+8. Vráť iba platný JSON bez markdownu.
 
 CENNÍK:
+
 ${JSON.stringify(catalog, null, 2)}
 
-Požadovaný formát:
+POŽADOVANÝ FORMÁT:
 
 {
   "items": [
@@ -105,7 +106,7 @@ Požadovaný formát:
       total
     });
 
-    } catch (error) {
+  } catch (error) {
     console.error("AI estimate error:", error);
 
     return NextResponse.json(
@@ -117,3 +118,4 @@ Požadovaný formát:
       { status: 500 }
     );
   }
+}
