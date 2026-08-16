@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { priceList } from "../../../../data/price-list";
 
 export async function POST(request) {
   try {
@@ -11,41 +12,39 @@ export async function POST(request) {
       );
     }
 
-    /*
-      Zatiaľ DEMO.
-
-      Neskôr sem napojíme:
-      1. Supabase
-      2. databázu cenníka
-      3. AI
-      4. výpočet materiálu
-      5. výslednú kalkuláciu
-    */
-
+    // Zatiaľ demo rozpoznanie zákazky.
+    // Neskôr túto časť nahradí AI.
     const items = [
       {
-        name: "Drážkovanie tehla",
+        name: priceList[0].name,
         qty: 100,
-        unit: "bm",
-        price: 8
+        unit: priceList[0].unit,
+        price: priceList[0].price
       },
       {
-        name: "Osadenie zásuvky",
+        name: priceList[7].name,
         qty: 48,
-        unit: "ks",
-        price: 9
+        unit: priceList[7].unit,
+        price: priceList[7].price
       },
       {
-        name: "Zapojenie svetla",
+        name: priceList[8].name,
         qty: 12,
-        unit: "ks",
-        price: 12
+        unit: priceList[8].unit,
+        price: priceList[8].price
       }
     ];
 
+    const total = items.reduce(
+      (sum, item) => sum + item.qty * item.price,
+      0
+    );
+
     return NextResponse.json({
       success: true,
-      items
+      description,
+      items,
+      total
     });
 
   } catch (error) {
