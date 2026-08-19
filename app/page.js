@@ -22,12 +22,8 @@ export default function Home() {
     try {
       const response = await fetch("/api/estimate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          description
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description })
       });
 
       const data = await response.json();
@@ -39,18 +35,10 @@ export default function Home() {
       }
 
       setItems(data.items || []);
-
-      setMessage(
-        "AI vytvorila predbežnú kalkuláciu podľa tvojho cenníka."
-      );
-
+      setMessage("AI vytvorila predbežnú kalkuláciu podľa cenníka zo Supabase.");
     } catch (error) {
       console.error(error);
-
-      setMessage(
-        error.message || "Nepodarilo sa spojiť s AI."
-      );
-
+      setMessage(error.message || "Nepodarilo sa spojiť s AI.");
     } finally {
       setLoading(false);
     }
@@ -97,76 +85,40 @@ export default function Home() {
 
   return (
     <main className="shell">
-
       <header className="header">
         <div>
-          <div className="eyebrow">
-            REMESELNÍK AI
-          </div>
-
+          <div className="eyebrow">REMESELNÍK AI</div>
           <h1>AI Nacenenie</h1>
-
-          <p>
-            Opíš zákazku a Remeselník AI pripraví
-            návrh kalkulácie.
-          </p>
+          <p>Opíš zákazku a Remeselník AI pripraví návrh kalkulácie.</p>
         </div>
-
-        <div className="badge">
-          PREPROD
-        </div>
+        <div className="badge">SUPABASE</div>
       </header>
 
       <section className="card">
-
-        <label htmlFor="description">
-          Opis zákazky
-        </label>
+        <label htmlFor="description">Opis zákazky</label>
 
         <textarea
           id="description"
           value={description}
-          onChange={(e) =>
-            setDescription(e.target.value)
-          }
+          onChange={(e) => setDescription(e.target.value)}
           placeholder="Napr.: Kompletná elektroinštalácia 3-izbového bytu, 75 m², 48 zásuviek, 12 svetiel, nový rozvádzač..."
         />
 
-        <button
-          onClick={calculateDemo}
-          disabled={loading}
-        >
-          {loading
-            ? "Počítam..."
-            : "🤖 Vypočítať nacenenie"}
+        <button onClick={calculateDemo} disabled={loading}>
+          {loading ? "Počítam..." : "🤖 Vypočítať nacenenie"}
         </button>
 
-        {message && (
-          <p className="message">
-            {message}
-          </p>
-        )}
-
+        {message && <p className="message">{message}</p>}
       </section>
 
       {items.length > 0 && (
-
         <section className="card">
-
           <div className="sectionTitle">
-
-            <h2>
-              Návrh kalkulácie
-            </h2>
-
-            <span>
-              {editing ? "Úprava" : "AI návrh"}
-            </span>
-
+            <h2>Návrh kalkulácie</h2>
+            <span>{editing ? "Úprava" : "AI návrh"}</span>
           </div>
 
           <div className="table">
-
             <div className="row head">
               <span>Položka</span>
               <span>Množstvo</span>
@@ -175,12 +127,7 @@ export default function Home() {
             </div>
 
             {items.map((item, index) => (
-
-              <div
-                className="row"
-                key={index}
-              >
-
+              <div className="row" key={index}>
                 {editing ? (
                   <>
                     <span>
@@ -188,15 +135,10 @@ export default function Home() {
                         type="text"
                         value={item.name}
                         onChange={(e) =>
-                          updateItem(
-                            index,
-                            "name",
-                            e.target.value
-                          )
+                          updateItem(index, "name", e.target.value)
                         }
                       />
                     </span>
-
                     <span>
                       <input
                         type="number"
@@ -204,27 +146,17 @@ export default function Home() {
                         step="0.01"
                         value={item.qty}
                         onChange={(e) =>
-                          updateItem(
-                            index,
-                            "qty",
-                            e.target.value
-                          )
+                          updateItem(index, "qty", e.target.value)
                         }
                       />
-
                       <input
                         type="text"
                         value={item.unit}
                         onChange={(e) =>
-                          updateItem(
-                            index,
-                            "unit",
-                            e.target.value
-                          )
+                          updateItem(index, "unit", e.target.value)
                         }
                       />
                     </span>
-
                     <span>
                       <input
                         type="number"
@@ -232,54 +164,34 @@ export default function Home() {
                         step="0.01"
                         value={item.price}
                         onChange={(e) =>
-                          updateItem(
-                            index,
-                            "price",
-                            e.target.value
-                          )
+                          updateItem(index, "price", e.target.value)
                         }
                       />{" "}
                       €
                     </span>
-
                     <strong>
                       {(item.qty * item.price).toFixed(2)} €
                     </strong>
-
                     <button
                       type="button"
                       className="secondary"
-                      onClick={() =>
-                        removeItem(index)
-                      }
+                      onClick={() => removeItem(index)}
                     >
                       Zmazať
                     </button>
                   </>
                 ) : (
                   <>
-                    <span>
-                      {item.name}
-                    </span>
-
-                    <span>
-                      {item.qty} {item.unit}
-                    </span>
-
-                    <span>
-                      {item.price.toFixed(2)} €
-                    </span>
-
+                    <span>{item.name}</span>
+                    <span>{item.qty} {item.unit}</span>
+                    <span>{Number(item.price).toFixed(2)} €</span>
                     <strong>
                       {(item.qty * item.price).toFixed(2)} €
                     </strong>
                   </>
                 )}
-
               </div>
-
             ))}
-
           </div>
 
           {editing && (
@@ -293,44 +205,24 @@ export default function Home() {
           )}
 
           <div className="total">
-
-            <span>
-              Predbežná cena
-            </span>
-
-            <strong>
-              {total.toFixed(2)} €
-            </strong>
-
+            <span>Predbežná cena</span>
+            <strong>{total.toFixed(2)} €</strong>
           </div>
 
           <div className="actions">
-
             <button
               className="secondary"
-              onClick={() =>
-                setEditing(!editing)
-              }
+              onClick={() => setEditing(!editing)}
             >
-              {editing
-                ? "Uložiť úpravy"
-                : "Upraviť kalkuláciu"}
+              {editing ? "Uložiť úpravy" : "Upraviť kalkuláciu"}
             </button>
 
-            <button>
-              Schváliť zákazku
-            </button>
-
+            <button>Schváliť zákazku</button>
           </div>
-
         </section>
-
       )}
 
-      <footer>
-        Remeselník AI · PREPROD
-      </footer>
-
+      <footer>Remeselník AI · Supabase</footer>
     </main>
   );
 }
