@@ -5,7 +5,10 @@ import { useState } from "react";
 export default function Home() {
   const [description, setDescription] = useState("");
   const [items, setItems] = useState([]);
+  const [estimateId, setEstimateId] = useState(null);
+  const [learnedFrom, setLearnedFrom] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [approving, setApproving] = useState(false);
   const [message, setMessage] = useState("");
   const [editing, setEditing] = useState(false);
 
@@ -18,6 +21,7 @@ export default function Home() {
     setLoading(true);
     setMessage("");
     setEditing(false);
+    setEstimateId(null);
 
     try {
       const response = await fetch("/api/estimate", {
@@ -29,18 +33,61 @@ export default function Home() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
-          data.error || "Nepodarilo sa vytvoriť kalkuláciu."
-        );
+        throw new Error(data.error || "Nepodarilo sa vytvoriť kalkuláciu.");
       }
 
       setItems(data.items || []);
-      setMessage("AI vytvorila predbežnú kalkuláciu podľa cenníka zo Supabase.");
+      setEstimateId(data.estimateId || null);
+      setLearnedFrom(data.learnedFrom || 0);
+
+      setMessage(
+        data.learnedFrom
+          ? `AI použila ${data.learnedFrom} schválených skúseností z minulých zákaziek.`
+          : "AI vytvorila prvú kalkuláciu. Zatiaľ nemá schválené historické skúsenosti."
+      );
     } catch (error) {
       console.error(error);
       setMessage(error.message || "Nepodarilo sa spojiť s AI.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function approveEstimate() {
+    if (!estimateId) {
+      setMessage("Kalkulácia ešte nemá uložené ID.");
+      return;
+    }
+
+    setApproving(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/estimate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "approve",
+          estimateId,
+          finalItems: items
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Nepodarilo sa schváliť zákazku.");
+      }
+
+      setMessage(
+        `Zákazka je schválená a uložená. AI ju môže použiť ako skúsenosť pri ďalších kalkuláciách.`
+      );
+      setEditing(false);
+    } catch (error) {
+      console.error(error);
+      setMessage(error.message || "Nepodarilo sa uložiť schválenú zákazku.");
+    } finally {
+      setApproving(false);
     }
   }
 
@@ -61,20 +108,13 @@ export default function Home() {
   }
 
   function removeItem(index) {
-    setItems((currentItems) =>
-      currentItems.filter((_, i) => i !== index)
-    );
+    setItems((currentItems) => currentItems.filter((_, i) => i !== index));
   }
 
   function addItem() {
     setItems((currentItems) => [
       ...currentItems,
-      {
-        name: "Nová položka",
-        qty: 1,
-        unit: "ks",
-        price: 0
-      }
+      { name: "Nová položka", qty: 1, unit: "ks", price: 0 }
     ]);
   }
 
@@ -96,7 +136,6 @@ export default function Home() {
 
       <section className="card">
         <label htmlFor="description">Opis zákazky</label>
-
         <textarea
           id="description"
           value={description}
@@ -104,7 +143,7 @@ export default function Home() {
           placeholder="Napr.: Kompletná elektroinštalácia 3-izbového bytu, 75 m², 48 zásuviek, 12 svetiel, nový rozvádzač..."
         />
 
-        <button onClick={calculateDemo} disabled={loading}>
+        <button onClick={calculateDemo} disabled={loading || approving}>
           {loading ? "Počítam..." : "🤖 Vypočítať nacenenie"}
         </button>
 
@@ -169,9 +208,7 @@ export default function Home() {
                       />{" "}
                       €
                     </span>
-                    <strong>
-                      {(item.qty * item.price).toFixed(2)} €
-                    </strong>
+                    <strong>{(item.qty * item.price).toFixed(2)} €</strong>
                     <button
                       type="button"
                       className="secondary"
@@ -183,11 +220,11 @@ export default function Home() {
                 ) : (
                   <>
                     <span>{item.name}</span>
-                    <span>{item.qty} {item.unit}</span>
+                    <span>
+                      {item.qty} {item.unit}
+                    </span>
                     <span>{Number(item.price).toFixed(2)} €</span>
-                    <strong>
-                      {(item.qty * item.price).toFixed(2)} €
-                    </strong>
+                    <strong>{(item.qty * item.price).toFixed(2)} €</strong>
                   </>
                 )}
               </div>
@@ -195,11 +232,7 @@ export default function Home() {
           </div>
 
           {editing && (
-            <button
-              type="button"
-              className="secondary"
-              onClick={addItem}
-            >
+            <button type="button" className="secondary" onClick={addItem}>
               + Pridať položku
             </button>
           )}
@@ -213,16 +246,22 @@ export default function Home() {
             <button
               className="secondary"
               onClick={() => setEditing(!editing)}
+              disabled={approving}
             >
               {editing ? "Uložiť úpravy" : "Upraviť kalkuláciu"}
             </button>
 
-            <button>Schváliť zákazku</button>
+            <button onClick={approveEstimate} disabled={approving || !estimateId}>
+              {approving ? "Ukladám..." : "✅ Schváliť a naučiť AI"}
+            </button>
           </div>
         </section>
       )}
 
-      <footer>Remeselník AI · Supabase</footer>
+      <footer>
+        Remeselník AI · Supabase
+        {learnedFrom > 0 ? ` · ${learnedFrom} skúseností použitých` : ""}
+      </footer>
     </main>
   );
 }
