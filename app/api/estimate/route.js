@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
-import { priceList } from "../../../data/price-list";
+import { createClient } from "@supabase/supabase-js";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_PUBLISHABLE_KEY
+);
 
 export async function POST(request) {
   try {
@@ -17,11 +22,34 @@ export async function POST(request) {
       );
     }
 
+    // Cenník sa už nenačítava z data/price-list.js.
+    // Načítava sa priamo zo Supabase.
+    const { data: priceList, error: priceListError } = await supabase
+      .from("price_list")
+      .select("id, name, unit, price")
+      .eq("active", true)
+      .order("id");
+
+    if (priceListError) {
+      console.error("Supabase price list error:", priceListError);
+      return NextResponse.json(
+        { error: "Nepodarilo sa načítať cenník zo Supabase." },
+        { status: 500 }
+      );
+    }
+
+    if (!priceList || priceList.length === 0) {
+      return NextResponse.json(
+        { error: "V Supabase nie je žiadny aktívny cenník." },
+        { status: 500 }
+      );
+    }
+
     const catalog = priceList.map((item) => ({
       id: item.id,
       name: item.name,
       unit: item.unit,
-      price: item.price
+      price: Number(item.price)
     }));
 
     const response = await openai.responses.create({
@@ -71,28 +99,30 @@ POŽADOVANÝ FORMÁT:
       ]
     });
 
-    const text = response.output_text;
+    const parsed = JSON.parse(response.output_text);
 
-    const parsed = JSON.parse(text);
-
-    const items = parsed.items
+    const items = (parsed.items || [])
       .map((item) => {
         const catalogItem = priceList.find(
           (priceItem) => priceItem.id === item.id
         );
 
-        if (!catalogItem) {
-          return null;
-        }
+        if (!catalogItem) return null;
 
         return {
+          id: catalogItem.id,
           name: catalogItem.name,
           qty: Number(item.qty),
           unit: catalogItem.unit,
-          price: catalogItem.price
+          price: Number(catalogItem.price)
         };
       })
-      .filter(Boolean);
+      .filter(
+        (item) =>
+          item &&
+          Number.isFinite(item.qty) &&
+          item.qty >= 0
+      );
 
     const total = items.reduce(
       (sum, item) => sum + item.qty * item.price,
@@ -105,7 +135,6 @@ POŽADOVANÝ FORMÁT:
       items,
       total
     });
-
   } catch (error) {
     console.error("AI estimate error:", error);
 
